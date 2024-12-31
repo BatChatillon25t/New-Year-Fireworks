@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy New Year 2025!</title>
+    <style>
+        /* Đặt nền xanh đen với hiệu ứng sáng */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #001a33, #000);
+            height: 100vh;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #newYearBanner {
+            font-family: "Courier New", Courier, monospace;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            padding: 20px 40px;
+            border-radius: 15px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        #newYearBanner .message-wrapper {
+            display: inline-flex;
+            align-items: center;
+            opacity: 0;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 2s, opacity 2s 2s;
+        }
+
+        #newYearBanner .message-wrapper span {
+            display: inline-block;
+        }
+
+        #newYearBanner .message {
+            opacity: 0;
+            white-space: nowrap;
+            transition: opacity 2s 2s;
+        }
+
+        #newYearBanner .blink {
+            opacity: 0;
+            animation: blink 1s infinite;
+        }
+
+        #newYearBanner.show .message-wrapper {
+            transform: scaleX(1);
+            opacity: 1;
+        }
+
+        #newYearBanner.show .message {
+            opacity: 1;
+        }
+
+        #clickHint {
+            color: yellow;
+            font-size: 1rem;
+            margin-top: 10px;
+            font-weight: normal;
+            transition: opacity 0.5s ease-out;
+            /* Thêm hiệu ứng mờ dần */
+            opacity: 1;
+        }
+
+        #clickHint.hidden {
+            opacity: 0;
+            /* Ẩn chú thích khi thêm lớp "hidden" */
+        }
+
+
+        @keyframes blink {
+            0% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="fireworks"></canvas>
+    <div id="newYearBanner">
+        <div class="message-wrapper">
+            <span>&lt;</span>
+            <div class="message" id="messageText">Happy New Year 2025</div>
+            <span>&gt;</span>
+            <span class="blink">.</span>
+        </div>
+        <p id="clickHint">Click vào text để chơi nhạc</p>
+    </div>
+    <audio id="explosionSound" src="explosion.mp3" preload="auto"></audio>
+    <audio id="backgroundMusic" src="happy_new_year.mp3"></audio>
+
+    <script>
+        const canvas = document.getElementById("fireworks");
+        const ctx = canvas.getContext("2d");
+
+
+        window.onload = function () {
+            const banner = document.getElementById("newYearBanner");
+            banner.classList.add("show");
+
+            // Lắng nghe sự kiện click vào phần văn bản "Happy New Year 2025"
+            const messageText = document.getElementById("messageText");
+            const audio = document.getElementById("backgroundMusic");
+            const clickHint = document.getElementById("clickHint");  // Lấy phần chú thích
+
+            // Khi người dùng nhấp vào văn bản, phát nhạc và ẩn phần chú thích
+            messageText.addEventListener('click', function () {
+                audio.play();  // Phát âm thanh khi nhấp vào phần văn bản
+                clickHint.classList.add('hidden');  // Thêm lớp "hidden" để ẩn chú thích
+            });
+        };
+
+
+        // Kích thước canvas bằng kích thước cửa sổ
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Mảng chứa các pháo hoa
+        let fireworks = [];
+
+        class Firework {
+            constructor(x, y, targetY, color) {
+                this.x = x;
+                this.y = y;
+                this.targetY = targetY; // Điểm pháo hoa nổ
+                this.color = color;
+                this.particles = [];
+                this.exploded = false;
+                this.trail = []; // Vệt sáng khi bắn lên
+            }
+
+            createParticles() {
+                for (let i = 0; i < 150; i++) {
+                    const angle = (Math.PI * 2 * i) / 150;
+                    const speed = Math.random() * 4 + 2;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    const opacity = Math.random();
+                    const size = Math.random() * 2 + 1; // Kích thước hạt pháo hoa
+
+                    // Màu ngẫu nhiên cho từng hạt
+                    const color = randomColor();
+
+                    this.particles.push({ x: this.x, y: this.y, vx, vy, opacity, size, color });
+                }
+            }
+
+            update() {
+                if (!this.exploded) {
+                    // Pháo hoa bay lên
+                    this.trail.push({ x: this.x, y: this.y }); // Thêm vệt sáng
+                    if (this.trail.length > 10) this.trail.shift(); // Giữ vệt sáng ngắn
+
+                    this.y -= 3; // Tốc độ bay lên
+                    if (this.y <= this.targetY) {
+                        this.exploded = true;
+                        this.createParticles();
+
+                        // Phát âm thanh khi pháo hoa nổ
+                        const explosionSound = document.getElementById("explosionSound");
+                        explosionSound.volume = 1; // Điều chỉnh âm lượng (từ 0 đến 1)
+                        explosionSound.currentTime = 0; // Đảm bảo âm thanh được phát từ đầu
+                        explosionSound.play();
+                    }
+                } else {
+                    // Cập nhật các hạt pháo hoa sau khi nổ
+                    for (let particle of this.particles) {
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        particle.vx *= 0.99; // Giảm tốc chậm hơn
+                        particle.vy *= 0.99;
+                        particle.vy += 0.02; // Trọng lực yếu hơn
+                        particle.opacity -= 0.005; // Giảm độ mờ chậm hơn
+                    }
+                    this.particles = this.particles.filter((particle) => particle.opacity > 0);
+                }
+            }
+
+
+
+            draw(ctx) {
+                if (!this.exploded) {
+                    // Vẽ vệt sáng khi pháo hoa bay lên
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const trailOpacity = (i + 1) / this.trail.length;
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                        ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${trailOpacity})`;
+                    }
+                    ctx.stroke();
+
+                    // Vẽ đầu pháo hoa
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgb(${this.color.r}, ${this.color.g}, ${this.color.b})`;
+                    ctx.fill();
+                } else {
+                    // Vẽ các hạt pháo hoa
+                    for (let particle of this.particles) {
+                        ctx.beginPath();
+                        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${particle.opacity})`;
+                        ctx.fill();
+                    }
+                }
+            }
+
+        }
+
+        function randomColor() {
+            return {
+                r: Math.floor(Math.random() * 155) + 100, // Đảm bảo giá trị từ 100 đến 255
+                g: Math.floor(Math.random() * 155) + 100,
+                b: Math.floor(Math.random() * 155) + 100,
+            };
+        }
+
+
+        function randomPosition() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height * 0.5; // Pháo hoa nổ ở nửa trên màn hình
+            return { x, y };
+        }
+
+        function createRandomFirework() {
+            const x = Math.random() * canvas.width;
+            const targetY = Math.random() * canvas.height * 0.5; // Điểm nổ
+            const color = randomColor();
+            fireworks.push(new Firework(x, canvas.height, targetY, color));
+        }
+
+        function loop() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.2)"; // Hiệu ứng mờ dần nền
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            fireworks.forEach((firework) => {
+                firework.update();
+                firework.draw(ctx);
+            });
+            fireworks = fireworks.filter((firework) => firework.particles.length > 0 || !firework.exploded);
+
+            requestAnimationFrame(loop);
+        }
+
+        // Tạo pháo hoa tự động mỗi 800ms
+        setInterval(createRandomFirework, 800);
+
+        loop();
+    </script>
+</body>
+
+</html>
